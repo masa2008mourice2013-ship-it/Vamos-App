@@ -9,11 +9,29 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="assets/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/roboto-latin-900-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<div id="splash" role="img" aria-label="¡Vamos! – Spanisch mit José">
+  <div class="sp-glow"></div>
+  <img class="sp-logo" src="assets/logo.png" alt="">
+  <div class="sp-title"><span id="sp-hola">¡HOLA!</span></div>
+  <p class="sp-sub">Spanisch lernen mit José</p>
+  <div class="sp-bar"><div></div></div>
+</div>
+<script>
+  // Splash nur beim ersten Öffnen pro Sitzung zeigen
+  (function () {
+    var sp = document.getElementById('splash');
+    var seen = false; try { seen = sessionStorage.getItem('vamos-splash') === '1'; sessionStorage.setItem('vamos-splash', '1'); } catch (e) {}
+    function hide() { if (!sp.parentNode) return; sp.classList.add('out'); setTimeout(function () { sp.remove(); }, 450); }
+    if (seen) { sp.remove(); return; }
+    try { var st = JSON.parse(localStorage.getItem('vamos-state-v1') || '{}'); if (st.name) document.getElementById('sp-hola').textContent = '¡HOLA, ' + String(st.name).toUpperCase() + '!'; } catch (e) {}
+    sp.addEventListener('click', hide);
+    setTimeout(hide, 2200);
+  })();
+</script>
 <div id="app">
   <main id="screen" tabindex="-1"></main>
 </div>

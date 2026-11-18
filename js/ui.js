@@ -58,7 +58,7 @@ export function nav(active) {
 }
 
 export function jose(text, accent) {
-  return `<div class="jose"><img src="${LOGO}" alt="José, der Torero" class="jose-bob"><div class="bubble" ${accent ? `style="box-shadow: inset 0 -3px 0 ${accent}"` : ''}><b>José</b><span>${text}</span></div></div>`;
+  return `<div class="jose"><img src="${LOGO}" alt="José, der Torero" class="jose-bob"><div class="bubble" ${accent ? `style="box-shadow: inset 0 -3px 0 ${accent}"` : ''}><b>José</b><span data-jose-text>${text}</span><button type="button" class="say-btn" data-jose-say aria-label="José vorlesen lassen">${ic('speaker', 18)}</button></div></div>`;
 }
 
 let ctx;
@@ -83,8 +83,33 @@ export function playTone(happy) {
   } catch (e) { /* kein Ton */ }
 }
 export function canSpeak() { return 'speechSynthesis' in window; }
-export function speak(text, lang = 'es-ES') {
-  try { const u = new SpeechSynthesisUtterance(text); u.lang = lang; u.rate = 0.9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { /* */ }
+function voiceFor(lang) {
+  try {
+    const vs = speechSynthesis.getVoices(); const base = lang.slice(0, 2);
+    return vs.find((v) => v.lang === lang) || vs.find((v) => v.lang.replace('_', '-').startsWith(base)) || null;
+  } catch (e) { return null; }
+}
+if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { /* */ } }
+function utter(text, lang, rate) {
+  const u = new SpeechSynthesisUtterance(text); u.lang = lang; u.rate = rate; u.pitch = lang.startsWith('es') ? 0.95 : 0.9;
+  const v = voiceFor(lang); if (v) u.voice = v; return u;
+}
+export function speak(text, lang = 'es-ES', rate = 0.9) {
+  try { speechSynthesis.cancel(); speechSynthesis.speak(utter(text, lang, rate)); } catch (e) { /* */ }
+}
+export function stopSpeaking() { try { speechSynthesis.cancel(); } catch (e) { /* */ } }
+// José spricht: Spanische Ausrufe (¡…! ¿…?) auf Spanisch, der Rest auf Deutsch
+export function joseSay(text, force = false) {
+  if (!canSpeak() || (!force && S.voice === false)) return;
+  const clean = String(text).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  if (!clean) return;
+  try {
+    speechSynthesis.cancel();
+    clean.split(/(¡[^!]*!|¿[^?]*\?)/).map((t) => t.trim()).filter(Boolean).forEach((t) => {
+      const es = /^[¡¿]/.test(t);
+      speechSynthesis.speak(utter(es ? t : t.replace(/[–—]/g, ','), es ? 'es-ES' : 'de-DE', es ? 0.95 : 1.0));
+    });
+  } catch (e) { /* */ }
 }
 export function toast(msg, ms = 2600) {
   const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;

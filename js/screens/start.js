@@ -1,8 +1,8 @@
 // Seite 1: Start
 import { S, save, racha, bestRacha, lastSevenDays, nivel, nivelProgress, currentCity, currentIndex, today } from '../store.js';
-import { header, ic, jose, LOGO, esc } from '../ui.js';
+import { header, ic, jose, LOGO, esc, joseSay, stopSpeaking } from '../ui.js';
 import { mapHTML } from '../map.js';
-import { CITIES } from '../data.js';
+import { CITIES, WORLDS } from '../data.js';
 
 function plan() {
   // Mo, Mi, Fr dieser Woche
@@ -41,14 +41,14 @@ export function render(root) {
   </div>
 
   <div class="col" style="gap:6px;margin-top:6px">
-    <div class="between"><span class="label or">Mundo 1 · España</span><span class="xs muted">Level ${currentIndex() + 1} von ${CITIES.length}</span></div>
+    <div class="between"><span class="label or">${WORLDS[city.world]}</span><span class="xs muted">Level ${currentIndex() + 1} von ${CITIES.length}</span></div>
     ${mapHTML()}
   </div>
 
   <div class="card pad col" style="gap:8px">
     <span class="label or">Heutiges Training</span>
     <div class="between">
-      <div class="col"><span class="h" style="font-size:24px;line-height:1.1">${esc(city.boss ? 'Endboss: El Toro' : city.name)}</span><span class="sm muted">${esc(city.unidad)} · ${city.vocab.length} Vokabeln · ca. 8 Min</span></div>
+      <div class="col"><span class="h" style="font-size:24px;line-height:1.1">${esc(city.boss ? 'Endboss: ' + city.short : city.name)}</span><span class="sm muted">${esc(city.unidad)} · ${city.vocab.length} Vokabeln · ca. 8 Min</span></div>
       <div class="col" style="align-items:flex-end;gap:4px"><span style="display:flex;gap:2px">${'★'.repeat(lv.stars)}<span class="muted">${'☆'.repeat(3 - lv.stars)}</span></span></div>
     </div>
     <a href="#/training/${city.id}" class="btn" style="margin-top:6px">¡Vamos! Level starten ${ic('arrow', 22, 'currentColor', 3)}</a>
@@ -74,7 +74,7 @@ export function render(root) {
     ask: learnedToday
       ? `${greet()}, ${S.name}! Heute hast du schon trainiert – ¡olé! Lust auf eine Runde mehr oder ein Spiel?`
       : `${greet()}, ${S.name}! Ich bin José, dein Torero-Trainer.\n${r ? `Deine Racha steht bei ${r}. Machen wir weiter?` : 'Hast du Lust auf ein kurzes Training?'}`,
-    yes: `¡Olé! Auf geht's: ${city.boss ? 'der Endboss El Toro wartet' : city.name + ' wartet'} – ${city.vocab.length} Vokabeln, ca. 8 Minuten.`,
+    yes: `¡Olé! Auf geht's: ${city.boss ? 'der Endboss ' + city.short + ' wartet' : city.name + ' wartet – ' + city.unidad.split(' · ')[0]} – ${city.vocab.length} Vokabeln, ca. 8 Minuten.`,
     no: 'Kein Problem, amigo. Ich erinnere dich später nochmal.\nWillst du vorher eine Runde Saque spielen?',
     bye: '¡Hasta luego! Ich warte hier auf dich.',
   };
@@ -90,7 +90,7 @@ export function render(root) {
     ov.className = 'overlay'; ov.id = 'jose-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'José, dein Torero-Trainer');
     ov.innerHTML = `<div class="overlay-in">
 <button type="button" class="icbtn" data-jose="close" aria-label="José schließen" style="position:absolute;top:18px;right:18px">${ic('x', 20, 'currentColor', 2.4)}</button>
-<div class="big-bubble"><b>José dice:</b><p aria-live="polite" id="jose-txt"></p></div>
+<div class="big-bubble" style="padding-right:52px"><b>José dice:</b><p aria-live="polite" id="jose-txt"></p><button type="button" class="say-btn" data-jose-say aria-label="José vorlesen lassen" style="top:12px;right:12px">${ic('speaker', 18)}</button></div>
 <img src="${LOGO}" alt="José, der Torero" class="jose-bob" style="width:230px;margin-top:14px">
 <div id="jose-btns" class="col" style="width:100%;gap:10px;margin-top:8px"></div></div>`;
     document.body.appendChild(ov);
@@ -107,7 +107,7 @@ export function render(root) {
   function type(step) {
     const txt = document.getElementById('jose-txt'); const bx = document.getElementById('jose-btns');
     if (!txt) return;
-    const full = lines[step]; let n = 0; bx.innerHTML = '';
+    const full = lines[step]; let n = 0; bx.innerHTML = ''; txt.dataset.full = full; joseSay(full);
     clearInterval(typer);
     typer = setInterval(() => {
       n += 2; txt.textContent = full.slice(0, n);
@@ -117,7 +117,7 @@ export function render(root) {
       }
     }, 35);
   }
-  function closeJose() { clearInterval(typer); const o = document.getElementById('jose-ov'); if (o) o.remove(); }
+  function closeJose() { clearInterval(typer); stopSpeaking(); const o = document.getElementById('jose-ov'); if (o) o.remove(); }
 
   root.onclick = (e) => { if (e.target.closest('[data-act="jose"]')) openJose(); };
   if (S.lastGreet !== today()) { S.lastGreet = today(); save(); setTimeout(() => openJose(), 300); }

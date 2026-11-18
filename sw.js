@@ -1,7 +1,11 @@
 // Service Worker: macht ¡Vamos! offline-fähig
-const CACHE = 'vamos-v1';
+const CACHE = 'vamos-v4';
 const FILES = [
   './',
+  'assets/fonts/roboto-latin-400-normal.woff2',
+  'assets/fonts/roboto-latin-500-normal.woff2',
+  'assets/fonts/roboto-latin-700-normal.woff2',
+  'assets/fonts/roboto-latin-900-normal.woff2',
   'assets/icons/apple-touch-icon.png',
   'assets/icons/icon-192.png',
   'assets/icons/icon-512.png',

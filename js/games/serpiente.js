@@ -4,6 +4,7 @@ import { esc, playTone, shuffle, refreshCoins, ic } from '../ui.js';
 import { gameHeader, pairs, useRound, noRounds, startScreen } from './common.js';
 
 const N = 14;
+const delay = (words, idx) => Math.max(170, 420 - words * 25 - idx * 4); // langsam starten, allmählich schneller
 const ABC = 'ABCDEFGHIJLMNOPRSTUVÑÁÉÍÓÚ';
 const heart = (on) => `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 6-8 11-8 11z" fill="${on ? '#C2185B' : 'none'}" stroke="${on ? '#C2185B' : '#A9B4E8'}" stroke-width="2"/></svg>`;
 
@@ -56,8 +57,8 @@ export function render(root) {
         if (st.idx >= st.letters.length) {
           playTone(true); st.words++; addCoins(2); refreshCoins(); recordAnswer(st.word.es, st.word.de, true);
           st.msg = '¡Olé! ' + st.word.de + ' = ' + st.word.es; newWord();
-          clearInterval(loop); loop = setInterval(step, Math.max(120, 230 - st.words * 10));
         } else { st.msg = ''; placeItems(); }
+        clearInterval(loop); loop = setInterval(step, delay(st.words, st.idx));
         hud();
       } else {
         st.items.splice(hit, 1);
@@ -124,7 +125,7 @@ export function render(root) {
       if (!useRound()) { draw(); return; }
       Object.assign(st, { started: true, over: false, running: true, lives: 3, words: 0, grow: 0, msg: '' });
       resetSnake(); newWord(); draw();
-      clearInterval(loop); loop = setInterval(step, 230); return;
+      clearInterval(loop); loop = setInterval(step, delay(0, 0)); return;
     }
     const d = e.target.closest('[data-dir]'); if (d) turn(d.dataset.dir.split(',').map(Number));
   };

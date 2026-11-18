@@ -21,13 +21,13 @@ function picker(root) {
   const levels = CITIES.map((c, i) => ({ c, i, open: unlocked(i), lv: S.levels[c.id] }));
   root.innerHTML = header('Training') + `<div class="content">
   <a href="#/scannen" class="row" style="padding:10px 14px;min-height:52px;border-radius:12px;border:2px dashed #FA6D1E;color:#fff;text-decoration:none">${ic('cam', 26, '#FA6D1E')}<span class="col" style="flex:1"><span style="font-weight:900;font-size:15px">Vokabeln scannen</span><span class="xs muted">Liste aus Buch oder Heft abfotografieren</span></span>${ic('arrow', 20, '#FA6D1E')}</a>
-  ${jose(`Heute empfehle ich dir: <b style="display:inline;color:#C2185B;letter-spacing:0;text-transform:none;font-size:14px">${esc(cur.boss ? 'El Toro' : cur.name)}</b>. Oder such dir ein Level aus!`)}
+  ${jose(`Heute empfehle ich dir: <b style="display:inline;color:#C2185B;letter-spacing:0;text-transform:none;font-size:14px">${esc(cur.boss ? cur.short : cur.name)}</b>. Oder such dir ein Level aus!`)}
   <a href="#/training/${cur.id}" class="btn">${esc(cur.boss ? 'Endboss starten' : cur.name + ' starten')} ${ic('arrow', 22, 'currentColor', 3)}</a>
   <div class="col" style="gap:8px">
     <span class="label muted">Alle Level</span>
     ${levels.map(({ c, open, lv }) => open
-      ? `<a href="#/training/${c.id}" class="card row" style="padding:10px 14px;min-height:56px;color:#fff;text-decoration:none;${c.id === cur.id ? 'border:2px solid #FA6D1E' : ''}"><span class="col" style="flex:1"><span class="xs muted">${esc(c.unidad)}</span><span style="font-weight:900">${esc(c.boss ? 'El Toro · Pamplona' : c.name)}</span></span><span>${stars(lv.stars)}</span></a>`
-      : `<div class="card row" style="padding:10px 14px;min-height:56px;border-style:dashed;color:#A9B4E8">${ic('lock', 20)}<span class="col" style="flex:1"><span class="xs">${esc(c.unidad)}</span><span style="font-weight:700">${esc(c.boss ? 'El Toro · Pamplona' : c.name)}</span></span><span class="xs">2 Sterne im Level davor</span></div>`).join('')}
+      ? `<a href="#/training/${c.id}" class="card row" style="padding:10px 14px;min-height:56px;color:#fff;text-decoration:none;${c.id === cur.id ? 'border:2px solid #FA6D1E' : ''}"><span class="col" style="flex:1"><span class="xs muted">${esc(c.unidad)}${c.id === S.school ? ' · <b style="color:#FA6D1E">Klasse ist hier</b>' : ''}</span><span style="font-weight:900">${esc(c.boss ? c.short + ' · ' + c.name : c.name)}</span></span><span>${stars(lv.stars)}</span></a>`
+      : `<div class="card row" style="padding:10px 14px;min-height:56px;border-style:dashed;color:#A9B4E8">${ic('lock', 20)}<span class="col" style="flex:1"><span class="xs">${esc(c.unidad)}</span><span style="font-weight:700">${esc(c.boss ? c.short + ' · ' + c.name : c.name)}</span></span><span class="xs">2 Sterne im Level davor</span></div>`).join('')}
     ${S.own.length >= 4 ? `<a href="#/training/own" class="card row" style="padding:10px 14px;min-height:56px;color:#fff;text-decoration:none">${ic('cam', 20, '#FA6D1E')}<span class="col" style="flex:1"><span class="xs muted">Gescannt</span><span style="font-weight:900">Eigene Liste · ${S.own.length} Wörter</span></span>${ic('arrow', 18, '#A9B4E8')}</a>` : ''}
   </div>
   ${mistakesBox()}
@@ -43,7 +43,7 @@ export function render(root, params) {
   else {
     const i = CITIES.findIndex((c) => c.id === lvl);
     if (i < 0 || !unlocked(i)) { picker(root); return; }
-    const c = CITIES[i]; cityId = c.id; label = c.boss ? 'Endboss · El Toro' : c.unidad;
+    const c = CITIES[i]; cityId = c.id; label = c.boss ? 'Endboss · ' + c.short : c.unidad.split(' · ')[0];
     pool = c.vocab.concat(S.own.filter(([es]) => (S.ownTarget || {})[es] === c.id));
   }
   if (pool.length < 4) { picker(root); return; }

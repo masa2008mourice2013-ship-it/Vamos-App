@@ -58,7 +58,7 @@ export function render(root) {
     OUTFIT.forEach((c) => c.opts.forEach(([, label, , at]) => { if (at > S.trainings && (!best || at < best[1])) best = [c.name + ': ' + label, at]; }));
     return best;
   }
-  function puzzleCity() { return CITIES.find((c, i) => !recipeUnlocked(c.id) && (i === 0 || S.levels[CITIES[i - 1].id].stars >= 2)) || currentCity(); }
+  function puzzleCity() { const cc = currentCity(); if (!recipeUnlocked(cc.id)) return cc; return CITIES.find((c, i) => !recipeUnlocked(c.id) && unlocked(i)) || cc; }
 
   function draw() {
     const nr = nextReward();
@@ -132,7 +132,7 @@ export function render(root) {
 
   <div class="col" style="gap:10px">
     <div class="between"><span class="h" style="font-size:22px">Sammelkarten</span><span class="xs ${freshRare ? 'or' : 'muted'}" style="font-weight:700">${freshRare ? freshRare + (freshRare === 1 ? ' neue Karte!' : ' neue Karten!') + ' · wischen' : 'wischen'}</span></div>
-    <div class="scards">${CITIES.filter((c) => c.pos).map((c, k) => cityCard(c) + (k === 0 ? rareCard(RARE[0], st.fresh === 'flamenco') : k === 2 ? rareCard(RARE[1], st.fresh === 'jose') : '')).join('')}</div>
+    <div class="scards">${CITIES.filter((c) => c.id !== 'start').map((c, k) => cityCard(c) + (k === 0 ? rareCard(RARE[0], st.fresh === 'flamenco') : k === 2 ? rareCard(RARE[1], st.fresh === 'jose') : '')).join('')}</div>
   </div>
 
   <div class="col" style="gap:10px"><span class="h" style="font-size:22px">Abzeichen · ${Object.keys(S.badges).length} von ${BADGES.length}</span>

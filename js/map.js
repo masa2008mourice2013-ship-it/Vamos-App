@@ -32,10 +32,10 @@ export function mapHTML({ withPin = true } = {}) {
     } else if (isCur) {
       marks += lbl(x, y + 95, c.name.toUpperCase(), '#FA6D1E', 'middle', 62, 900);
     } else {
-      marks += `<circle cx="${x}" cy="${y}" r="52" fill="#020124" stroke="#A9B4E8" stroke-width="8"/><text x="${x}" y="${y + 19}" text-anchor="middle" font-family="Roboto, sans-serif" font-size="54" font-weight="700" fill="#A9B4E8">${c.num}</text>` + lbl(x - (c.id === 'valencia' ? 30 : 0), y + 125, c.name, '#A9B4E8');
+      marks += `<circle cx="${x}" cy="${y}" r="52" fill="#020124" stroke="#A9B4E8" stroke-width="8"/><text x="${x}" y="${y + 19}" text-anchor="middle" font-family="Roboto, sans-serif" font-size="54" font-weight="700" fill="#A9B4E8">${c.num}</text>` + lbl(x - (c.id === 'valencia' ? 30 : 0), y + 125, c.name, '#A9B4E8', 'middle');
     }
   });
-  const pinPos = curCity.pos || [1640, 120];
+  const pinPos = curCity.pos || (cur === 0 ? [1640, 120] : [160, 1230]);
   const pct = (p) => `left:${(p[0] / W * 100).toFixed(2)}%; top:${(p[1] / H * 100).toFixed(2)}%`;
   const boss = CITIES.find((c) => c.boss);
   const firstDone = S.levels.start.stars >= 2;
@@ -44,6 +44,8 @@ export function mapHTML({ withPin = true } = {}) {
 <svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
 <path d="M${start[0]} ${start[1]} Q1150 160 ${pts[0].pos[0]} ${pts[0].pos[1]}" fill="none" stroke="${firstDone ? '#FA6D1E' : '#A9B4E8'}" stroke-width="${firstDone ? 16 : 13}" ${firstDone ? '' : 'stroke-dasharray="2 34"'} stroke-linecap="round"/>
 <path d="${path}" fill="none" stroke="#A9B4E8" stroke-width="13" stroke-dasharray="2 34" stroke-linecap="round"/>
+<path d="M${pts[pts.length - 1].pos[0]} ${pts[pts.length - 1].pos[1]} Q240 1240 40 1300" fill="none" stroke="#A9B4E8" stroke-width="13" stroke-dasharray="2 34" stroke-linecap="round"/>
+${lbl(30, 1290, '✈ a Buenos Aires', '#A9B4E8', 'start', 52, 700)}
 <rect x="1520" y="0" width="230" height="86" rx="18" fill="#FA6D1E"/><text x="1635" y="60" text-anchor="middle" font-family="Roboto, sans-serif" font-size="50" font-weight="900" fill="#020124">START</text>
 ${marks}
 </svg>

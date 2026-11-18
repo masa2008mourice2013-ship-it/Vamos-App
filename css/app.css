@@ -1,4 +1,8 @@
 /* ¡Vamos! – Styles nach Styleguide v3 (Nachtblau + Orange) */
+@font-face { font-family: Roboto; font-style: normal; font-weight: 400; font-display: swap; src: url(../assets/fonts/roboto-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: Roboto; font-style: normal; font-weight: 500; font-display: swap; src: url(../assets/fonts/roboto-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: Roboto; font-style: normal; font-weight: 700; font-display: swap; src: url(../assets/fonts/roboto-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: Roboto; font-style: normal; font-weight: 900; font-display: swap; src: url(../assets/fonts/roboto-latin-900-normal.woff2) format('woff2'); }
 :root {
   --bg: #020124;
   --s1: #0B1A6E;
@@ -94,6 +98,9 @@ button { -webkit-appearance: none; appearance: none; }
 .bubble { position: relative; flex: 1; background: var(--t); color: var(--bg); border-radius: 16px; padding: 10px 14px; box-shadow: inset 0 -3px 0 var(--o); }
 .bubble b { display: block; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--cr); }
 .bubble span { display: block; font-size: 14px; font-weight: 700; line-height: 1.4; }
+.bubble { padding-right: 46px; }
+.say-btn { position: absolute; right: 6px; top: 6px; width: 34px; height: 34px; border-radius: 50%; border: none; background: #F1F2FA; color: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.say-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .bubble::after { content: ""; position: absolute; left: -9px; bottom: 14px; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-right: 10px solid var(--t); }
 .jose-bob { animation: joseBob 2.4s ease-in-out infinite; }
 @keyframes joseBob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
@@ -161,3 +168,18 @@ details.city[open] .chev { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Splash */
+#splash { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; transition: opacity .45s, transform .45s; cursor: pointer; }
+#splash.out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.sp-glow { position: absolute; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(250,109,30,.35) 0%, rgba(250,109,30,0) 70%); top: 50%; left: 50%; transform: translate(-50%, -62%); animation: spGlow 2.2s ease-in-out infinite; }
+@keyframes spGlow { 0%, 100% { transform: translate(-50%, -62%) scale(.9); } 50% { transform: translate(-50%, -62%) scale(1.08); } }
+.sp-logo { position: relative; width: min(72vw, 300px); height: auto; animation: spPop .8s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes spPop { 0% { transform: scale(.2) rotate(-14deg); opacity: 0; } 70% { transform: scale(1.08) rotate(3deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+.sp-title { position: relative; background: var(--o); color: var(--bg); padding: 10px 34px 14px 22px; clip-path: var(--slant); animation: spIn .5s .5s ease-out both; }
+.sp-title span { font-weight: 900; font-size: 36px; letter-spacing: -1px; line-height: 1; display: block; }
+@keyframes spIn { 0% { transform: translateY(24px) skewX(-8deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.sp-sub { position: relative; margin: 0; color: var(--g); font-weight: 700; font-size: 16px; animation: spIn .5s .8s ease-out both; }
+.sp-bar { position: relative; width: 160px; height: 6px; border-radius: 3px; background: var(--s2); overflow: hidden; margin-top: 10px; }
+.sp-bar div { height: 100%; width: 0; background: var(--o); animation: spLoad 1.9s .2s ease-in-out forwards; }
+@keyframes spLoad { to { width: 100%; } }

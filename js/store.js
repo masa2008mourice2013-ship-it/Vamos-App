@@ -1,5 +1,5 @@
 // ¡Vamos! – Spielstand: wird im Browser des Handys gespeichert (localStorage)
-import { CITIES, OUTFIT } from './data.js';
+import { CITIES, OUTFIT, SCHOOL_DEFAULT } from './data.js';
 
 const KEY = 'vamos-state-v1';
 
@@ -12,7 +12,7 @@ function fresh() {
     week: { id: weekId(), correct: 0, claimed: false },
     outfit: { frisur: 'kurz', haar: '#2A1A14', brille: 'keine', band: 'keins', trikot: 'basic', hose: 'standard', schuhe: 'keine', extra: 'nichts' },
     bonusItems: [], revealed: {}, cooked: {}, badges: {}, records: { saque: 0, snake: 0, memo: 0, tres: 0 },
-    games: 0, lastGreet: '', famCode: 'VAMOS-' + String(Math.floor(1000 + Math.random() * 9000)), hadMistakes: false,
+    games: 0, voice: true, school: SCHOOL_DEFAULT, lastGreet: '', famCode: 'VAMOS-' + String(Math.floor(1000 + Math.random() * 9000)), hadMistakes: false,
   };
 }
 
@@ -24,6 +24,7 @@ function load() {
     if (raw) {
       const s = Object.assign(fresh(), JSON.parse(raw));
       CITIES.forEach((c) => { if (!s.levels[c.id]) s.levels[c.id] = { stars: 0, done: 0, pieces: 0 }; });
+      if (!CITIES.some((c) => c.id === s.school)) s.school = SCHOOL_DEFAULT;
       if (s.week.id !== weekId()) s.week = { id: weekId(), correct: 0, claimed: false };
       return s;
     }
@@ -72,9 +73,12 @@ export function lastSevenDays() {
 // ---------- Level ----------
 export const nivel = () => Math.floor(S.xp / 200) + 1;
 export const nivelProgress = () => (S.xp % 200) / 200;
-export function unlocked(i) { return i === 0 || S.levels[CITIES[i - 1].id].stars >= 2; }
+export const schoolIndex = () => Math.max(0, CITIES.findIndex((c) => c.id === S.school));
+// Frei ist: alles bis zum aktuellen Stand der Klasse – und danach jedes Level, dessen Vorgänger 2 Sterne hat
+export function unlocked(i) { return i <= schoolIndex() || S.levels[CITIES[i - 1].id].stars >= 2; }
+// Empfohlenes Level: ab dem Stand der Klasse das erste, das noch keine 2 Sterne hat
 export function currentIndex() {
-  for (let i = 0; i < CITIES.length; i++) { if (unlocked(i) && S.levels[CITIES[i].id].stars < 2) return i; }
+  for (let i = schoolIndex(); i < CITIES.length; i++) { if (unlocked(i) && S.levels[CITIES[i].id].stars < 2) return i; }
   return CITIES.length - 1;
 }
 export const currentCity = () => CITIES[currentIndex()];
@@ -133,7 +137,7 @@ export function finishTraining(cityId, correct, total, combo) {
   if (S.maxCombo >= 10) award('combo10');
   if (knownCount() >= 50) award('words50');
   if (knownCount() >= 100) award('words100');
-  if (cityId === 'pamplona' && stars >= 2) award('boss');
+  if ((cityId === 'pamplona' || cityId === 'condor') && stars >= 2) award('boss');
   save();
   return { stars, xp, newStars: l.stars > before, unlockedNext: before < 2 && l.stars >= 2 };
 }

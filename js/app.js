@@ -1,5 +1,5 @@
 // ¡Vamos! – Start der App und Navigation zwischen den Bildschirmen
-import { nav, tickClock } from './ui.js';
+import { nav, tickClock, joseSay, stopSpeaking } from './ui.js';
 import * as start from './screens/start.js';
 import * as training from './screens/training.js';
 import * as tour from './screens/tour.js';
@@ -30,6 +30,7 @@ function go() {
   const r = routes[name] || routes.start;
   if (typeof cleanup === 'function') { try { cleanup(); } catch (e) { /* */ } }
   cleanup = null;
+  stopSpeaking(); lastSaid = '';
   root.innerHTML = '';
   root.onclick = null; root.oninput = null; root.onchange = null; root.onkeydown = null;
   window.scrollTo(0, 0);
@@ -38,6 +39,22 @@ function go() {
   tickClock();
   root.focus({ preventScroll: true });
 }
+// José spricht automatisch, sobald eine neue Sprechblase auftaucht
+let lastSaid = '', sayTimer = null;
+new MutationObserver(() => {
+  clearTimeout(sayTimer);
+  sayTimer = setTimeout(() => {
+    if (document.getElementById('jose-ov')) return;
+    const el = root.querySelector('[data-jose-text]'); if (!el) return;
+    const t = el.textContent.trim();
+    if (t && t !== lastSaid) { lastSaid = t; joseSay(t); }
+  }, 350);
+}).observe(root, { childList: true, subtree: true });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-jose-say]'); if (!b) return;
+  const t = b.closest('.bubble, .big-bubble').querySelector('[data-jose-text], #jose-txt');
+  if (t) joseSay(t.dataset.full || t.textContent, true);
+});
 window.addEventListener('hashchange', go);
 setInterval(tickClock, 1000);
 go();

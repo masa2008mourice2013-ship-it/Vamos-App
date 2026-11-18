@@ -1,6 +1,7 @@
 // Profil & Familie
 import { S, save, resetAll, racha, nivel, knownCount } from '../store.js';
 import { header, ic, jose, esc, toast } from '../ui.js';
+import { CITIES } from '../data.js';
 import { avatarSVG } from '../art.js';
 
 export function render(root) {
@@ -17,6 +18,15 @@ export function render(root) {
     <input id="nm" class="inp" maxlength="20" value="${esc(S.name)}" autocomplete="off">
     <button type="button" class="btn2" data-act="name">Name speichern</button>
   </div>
+  <div class="card pad col" style="gap:10px">
+    <label for="school" style="font-weight:700">Die Klasse ist gerade bei …</label>
+    <select id="school" class="inp" style="font-size:15px">${CITIES.filter((c) => !c.boss).map((c) => `<option value="${c.id}" ${S.school === c.id ? 'selected' : ''}>${esc(c.unidad)}</option>`).join('')}</select>
+    <span class="xs muted">Alle Level bis hierhin sind frei. Danach geht es mit 2 Sternen weiter.</span>
+  </div>
+  <div class="card pad between" style="gap:12px">
+    <div class="col"><span style="font-weight:700">José spricht</span><span class="xs muted">Liest seine Sprechblasen laut vor</span></div>
+    <button type="button" data-act="voice" aria-pressed="${S.voice !== false}" class="chip ${S.voice !== false ? 'on' : ''}" style="min-width:76px">${S.voice !== false ? 'An' : 'Aus'}</button>
+  </div>
   <div class="card pad col" style="gap:12px">
     <span class="label or">Familie · kommt in Etappe 3</span>
     <span class="h" style="font-size:22px;line-height:1.15">Duell mit Mama</span>
@@ -32,13 +42,15 @@ export function render(root) {
     <span class="sm muted">Löscht alle XP, Sterne, Münzen und Fotos auf diesem Handy.</span>
     ${st.confirm ? `<div class="g2"><button type="button" class="btn2" data-act="cancel">Abbrechen</button><button type="button" class="btn2" data-act="reset" style="border-color:#FF6B6B;color:#FF6B6B">Ja, alles löschen</button></div>` : '<button type="button" class="btn2" data-act="ask" style="border-color:#FF6B6B;color:#FF6B6B">Zurücksetzen …</button>'}
   </div>
-  <span class="xs muted" style="text-align:center">¡Vamos! · Etappe 1 · Version 1.0</span>
+  <span class="xs muted" style="text-align:center">¡Vamos! · Etappe 1 · Version 1.3</span>
 </div>`;
   }
+  root.onchange = (e) => { if (e.target.id === 'school') { S.school = e.target.value; save(); toast('Gespeichert: ' + e.target.selectedOptions[0].textContent); draw(); } };
   root.onclick = (e) => {
     const a = e.target.closest('[data-act]'); if (!a) return;
     const act = a.dataset.act;
     if (act === 'name') { const v = root.querySelector('#nm').value.trim(); if (v) { S.name = v; save(); toast('¡Hola, ' + v + '!'); draw(); } }
+    if (act === 'voice') { S.voice = S.voice === false; save(); draw(); }
     if (act === 'ask') { st.confirm = true; draw(); }
     if (act === 'cancel') { st.confirm = false; draw(); }
     if (act === 'reset') { Object.keys(localStorage).filter((k) => k.startsWith('vamos-')).forEach((k) => localStorage.removeItem(k)); resetAll(); location.hash = '#/start'; location.reload(); }

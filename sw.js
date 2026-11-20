@@ -1,5 +1,5 @@
 // Service Worker: macht ¡Vamos! offline-fähig
-const CACHE = 'vamos-v7';
+const CACHE = 'vamos-v9';
 const IMG = 'vamos-img-v1';
 const FILES = [
   './',
@@ -24,6 +24,8 @@ const FILES = [
   'js/games/serpiente.js',
   'js/games/tres.js',
   'js/map.js',
+  'js/config.js',
+  'js/push.js',
   'js/photos.js',
   'js/wiki.js',
   'js/screens/bildnachweise.js',
@@ -57,4 +59,30 @@ self.addEventListener('fetch', (e) => {
   } else if (url.hostname.includes('fonts.g')) {
     e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return res; })));
   }
+});
+
+// ---------- Push-Erinnerungen ----------
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: '¡Vamos!', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || '¡Vamos!', {
+    body: d.body || 'Zeit für dein Spanisch-Training!',
+    icon: 'assets/icons/icon-192.png',
+    badge: 'assets/icons/icon-192.png',
+    tag: d.tag || 'vamos-training',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 400],
+    data: { url: d.url || './#/training', ack: d.ack || '' },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const { url, ack } = e.notification.data || {};
+  e.waitUntil((async () => {
+    if (ack) { try { await fetch(ack, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }); } catch (err) { /* offline */ } }
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) { await c.focus(); if ('navigate' in c && url) { try { await c.navigate(url); } catch (err) { /* */ } } return; } }
+    if (self.clients.openWindow) await self.clients.openWindow(url || './');
+  })());
 });

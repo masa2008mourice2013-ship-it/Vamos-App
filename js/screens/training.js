@@ -2,6 +2,7 @@
 import { CITIES } from '../data.js';
 import { S, save, unlocked, currentCity, allPairs, recordAnswer, finishTraining, recipeUnlocked } from '../store.js';
 import { header, ic, jose, LOGO, esc, playTone, speak, canSpeak, shuffle, refreshCoins, stars } from '../ui.js';
+import { ackPush } from '../push.js';
 
 const strip = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 const norm = (s) => s.toLowerCase().replace(/[¿¡!?.,]/g, '').replace(/\s+/g, ' ').trim();
@@ -77,7 +78,7 @@ export function render(root, params) {
       st.done = true;
       if (cityId) st.result = finishTraining(cityId, st.correct, items.length, st.combo);
       else { S.xp += st.correct * 10; S.rounds += 1; save(); st.result = { stars: 0, xp: st.correct * 10 }; }
-      refreshCoins();
+      refreshCoins(); ackPush();
       playTone(true);
     }
     draw();

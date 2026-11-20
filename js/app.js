@@ -1,5 +1,6 @@
 // ¡Vamos! – Start der App und Navigation zwischen den Bildschirmen
 import { nav, tickClock, joseSay, stopSpeaking } from './ui.js';
+import { ackPush, syncPush } from './push.js';
 import * as start from './screens/start.js';
 import * as training from './screens/training.js';
 import * as tour from './screens/tour.js';
@@ -58,6 +59,8 @@ document.addEventListener('click', (e) => {
   if (t) joseSay(t.dataset.full || t.textContent, true);
 });
 document.addEventListener('click', (e) => { const w = e.target.closest('[data-wiki]'); if (w) openViewer(w.dataset.wiki); });
+if (location.search.includes('push=1')) { ackPush(); history.replaceState(null, '', location.pathname + location.hash); }
+setTimeout(syncPush, 3000);
 window.addEventListener('hashchange', go);
 setInterval(tickClock, 1000);
 go();

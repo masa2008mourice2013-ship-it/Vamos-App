@@ -2,6 +2,7 @@
 import { S, save, resetAll, racha, nivel, knownCount, savePhoto, getPhoto, today } from '../store.js';
 import { header, ic, jose, esc, toast, profilePic, playTone, joseSay, voicesFor, previewVoice, onVoices, canSpeak } from '../ui.js';
 import { CITIES } from '../data.js';
+import { pushConfigured, pushSupported, permission, enablePush, disablePush, syncPush, testPush } from '../push.js';
 
 // Quadratisch zuschneiden und verkleinern (Profilbild)
 function squareCrop(file, size = 320) {
@@ -64,9 +65,20 @@ export function render(root) {
   <section class="set-sec" aria-labelledby="h-plan">
     <span class="label or" id="h-plan">Trainingsplan</span>
     <div class="card">
-      ${block('Lerntage', 'Diese Tage zeigt die Startseite – und an ihnen kommen später die Erinnerungen', `<div class="seg">${DAYS.map(([d, l]) => `<button type="button" class="chip ${S.planDays.includes(d) ? 'on' : ''}" aria-pressed="${S.planDays.includes(d)}" data-day="${d}" style="min-width:44px">${l}</button>`).join('')}</div>`)}
-      ${row('Uhrzeit', 'Ab wann wird gelernt?', `<input type="time" id="ptime" class="inp" value="${esc(S.planTime)}" style="width:120px;height:44px;font-size:16px">`)}
-      <div style="padding:0 14px 12px"><span class="xs muted">Push-Erinnerungen aufs Handy kommen mit Etappe 2.</span></div>
+      ${block('Lerntage', 'An diesen Tagen erinnert José dich – die Startseite zeigt sie auch', `<div class="seg">${DAYS.map(([d, l]) => `<button type="button" class="chip ${S.planDays.includes(d) ? 'on' : ''}" aria-pressed="${S.planDays.includes(d)}" data-day="${d}" style="min-width:44px">${l}</button>`).join('')}</div>`)}
+      ${row('Uhrzeit', 'Ab dann kommen die Erinnerungen', `<input type="time" id="ptime" class="inp" value="${esc(S.planTime)}" style="width:120px;height:44px;font-size:16px">`)}
+    </div>
+  </section>
+
+  <section class="set-sec" aria-labelledby="h-push">
+    <span class="label or" id="h-push">Erinnerungen aufs Handy</span>
+    <div class="card">
+      ${!pushConfigured() ? `<div class="pad sm muted" style="line-height:1.5">Noch nicht eingerichtet: Der Push-Server muss einmal bei Cloudflare angelegt und seine Adresse in <b>js/config.js</b> eingetragen werden (siehe Anleitung).</div>`
+      : !pushSupported() ? `<div class="pad sm muted">Dieses Gerät oder dieser Browser kann leider keine Push-Nachrichten. Auf Android bitte Chrome nutzen und die App installieren.</div>`
+      : `${row('Push-Erinnerungen', S.pushOn ? (permission() === 'granted' ? 'An – José meldet sich an deinen Lerntagen' : 'Benachrichtigungen sind im Browser blockiert') : 'Aus', sw('pushOn', !!S.pushOn))}
+      ${S.pushOn ? `${block('Wiederholen alle …', 'José erinnert so lange, bis du die App über die Nachricht öffnest oder trainiert hast.', seg('pushInterval', [[10, '10 Min'], [15, '15 Min'], [30, '30 Min'], [60, '60 Min']]))}
+      ${block('Spätestens bis', 'Danach ist für heute Ruhe.', seg('pushUntil', [['18:00', '18 Uhr'], ['19:00', '19 Uhr'], ['20:00', '20 Uhr'], ['21:00', '21 Uhr']]))}
+      <div style="padding:0 14px 14px"><button type="button" class="btn2" data-act="pushtest" style="min-height:44px;font-size:14px">${ic('speaker', 18)} Test-Nachricht schicken</button></div>` : ''}`}
     </div>
   </section>
 
@@ -116,20 +128,29 @@ export function render(root) {
     <span class="label or">App aufs Handy</span>
     <div class="card pad"><span class="sm" style="line-height:1.5">In Chrome auf Android: oben rechts auf <b>⋮</b> → <b>„App installieren“</b>. Dann startet ¡Vamos! wie eine echte App – auch ohne Internet.</span></div>
   </section>
-  <span class="xs muted" style="text-align:center">¡Vamos! · Version 1.6${learnedToday ? ' · heute schon trainiert ✓' : ''}</span>
+  <span class="xs muted" style="text-align:center">¡Vamos! · Version 1.8${learnedToday ? ' · heute schon trainiert ✓' : ''}</span>
 </div>`;
   }
 
   root.onclick = (e) => {
     let x;
-    if ((x = e.target.closest('[data-sw]'))) { S[x.dataset.sw] = x.getAttribute('aria-checked') !== 'true'; save(); draw(); return; }
-    if ((x = e.target.closest('[data-seg]'))) { const k = x.dataset.seg; const v = x.dataset.val; S[k] = k === 'qcount' ? +v : v; save(); draw(); return; }
-    if ((x = e.target.closest('[data-day]'))) { const d = +x.dataset.day; S.planDays = S.planDays.includes(d) ? S.planDays.filter((n) => n !== d) : S.planDays.concat(d); if (!S.planDays.length) S.planDays = [d]; save(); draw(); return; }
+    if ((x = e.target.closest('[data-sw]'))) {
+      const k = x.dataset.sw; const on = x.getAttribute('aria-checked') !== 'true';
+      if (k === 'pushOn') {
+        x.disabled = true;
+        (on ? enablePush() : disablePush()).then(() => { toast(on ? '¡Listo! José erinnert dich an deinen Lerntagen.' : 'Erinnerungen ausgeschaltet'); draw(); }).catch((err) => { S.pushOn = false; save(); toast(err.message, 4500); draw(); });
+        return;
+      }
+      S[k] = on; save(); draw(); return;
+    }
+    if ((x = e.target.closest('[data-seg]'))) { const k = x.dataset.seg; const v = x.dataset.val; S[k] = (k === 'qcount' || k === 'pushInterval') ? +v : v; save(); if (k.startsWith('push')) syncPush(); draw(); return; }
+    if ((x = e.target.closest('[data-day]'))) { const d = +x.dataset.day; S.planDays = S.planDays.includes(d) ? S.planDays.filter((n) => n !== d) : S.planDays.concat(d); if (!S.planDays.length) S.planDays = [d]; save(); syncPush(); draw(); return; }
     if ((x = e.target.closest('[data-prev]'))) { const key = x.dataset.prev; const sel = root.querySelector(`[data-voice="${key}"]`); const lang = key === 'voiceEs' ? 'es-ES' : 'de-DE'; if (sel.value) previewVoice(sel.value, lang); else joseSay(lang === 'es-ES' ? '¡Hola, Mourice! ¿Vamos a aprender español?' : 'Hallo Mourice! Lust auf ein kurzes Training?', true); return; }
     if ((x = e.target.closest('[data-mode]'))) { S.avatarMode = x.dataset.mode; save(); draw(); return; }
     if (!(x = e.target.closest('[data-act]'))) return;
     const a = x.dataset.act;
-    if (a === 'name') { const v = root.querySelector('#nm').value.trim(); if (v) { S.name = v; save(); toast('¡Hola, ' + v + '!'); draw(); } }
+    if (a === 'name') { const v = root.querySelector('#nm').value.trim(); if (v) { S.name = v; save(); syncPush(); toast('¡Hola, ' + v + '!'); draw(); } }
+    if (a === 'pushtest') { testPush().then((r) => toast(r.ok ? 'Test verschickt – gleich sollte eine Nachricht kommen.' : 'Test fehlgeschlagen: ' + (r.error || r.status), 4000)).catch(() => toast('Push-Server nicht erreichbar.')); return; }
     if (a === 'test') { playTone(true); joseSay('¡Hola! So klinge ich gerade. ¡Vamos!', true); }
     if (a === 'delphoto') { try { localStorage.removeItem('vamos-photo-profile'); } catch (err) { /* */ } S.avatarMode = 'figur'; save(); draw(); }
     if (a === 'unlock') { const v = root.querySelector('#pinin').value; if (v === S.parentPin) { st.unlocked = true; st.pinMsg = ''; } else st.pinMsg = 'Falsche PIN.'; draw(); }
@@ -150,7 +171,7 @@ export function render(root) {
     const t = e.target;
     if (t.id === 'school') { S.school = t.value; save(); toast('Gespeichert: ' + t.selectedOptions[0].textContent); draw(); return; }
     if (t.matches('[data-voice]')) { S[t.dataset.voice] = t.value; save(); toast(t.value ? 'Stimme gespeichert' : 'Automatische Stimme'); return; }
-    if (t.id === 'ptime') { S.planTime = t.value || '14:30'; save(); toast('Uhrzeit gespeichert'); return; }
+    if (t.id === 'ptime') { S.planTime = t.value || '14:30'; save(); syncPush(); toast('Uhrzeit gespeichert'); return; }
     if (t.matches('[data-photo]')) {
       const f = t.files && t.files[0]; if (!f) return;
       try { const d = await squareCrop(f); if (!savePhoto('profile', d)) { toast('Speicher voll – Foto zu groß.'); return; } S.avatarMode = 'foto'; save(); playTone(true); toast('¡Qué guapo! Profilbild gespeichert.'); draw(); } catch (err) { toast('Das Foto konnte nicht gelesen werden.'); }

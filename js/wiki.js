@@ -100,3 +100,19 @@ export function getImages(names) {
 }
 
 export const credit = (v) => v ? `Foto: ${v.artist || 'Wikimedia Commons'}${v.license ? ' · ' + v.license : ''} · Wikimedia Commons` : '';
+
+// Deutsche Fassung: Einleitung aus der deutschen Wikipedia (über den Sprachlink des Artikels)
+export async function getGerman(name) {
+  const c = load(); const v = c[name]; if (!v || !v.title) return null;
+  if (v.deExtract !== undefined) return v.deExtract;
+  try {
+    const l = await api(ES, { action: 'query', prop: 'langlinks', lllang: 'de', titles: v.title });
+    const page = ((l.query || {}).pages || [])[0] || {}; const link = (page.langlinks || [])[0];
+    if (!link) { v.deExtract = null; store(); return null; }
+    const deTitle = link.title || link['*'];
+    const d = await api('https://de.wikipedia.org/w/api.php', { action: 'query', prop: 'extracts|info', inprop: 'url', exintro: '1', explaintext: '1', exsentences: '2', titles: deTitle });
+    const dp = ((d.query || {}).pages || [])[0] || {};
+    v.deExtract = dp.extract ? { text: dp.extract.slice(0, 400), url: dp.fullurl || '' } : null; store();
+    return v.deExtract;
+  } catch (e) { return undefined; }
+}

@@ -33,8 +33,12 @@ ${open ? stars(l.stars) : ic('lock', 18, '#A9B4E8')}<span class="chev">${ic('che
   <div class="col" style="gap:6px"><span class="label or">Sehenswürdigkeiten</span><div class="g3">${c.sights.map((x) => tile(x)).join('')}</div></div>
   <div class="col" style="gap:6px"><span class="label or">Essen</span><div class="g3">${c.food.map((x) => tile(x)).join('')}</div></div>
   ${c.es ? `<div class="col" style="gap:8px;padding:12px;border-radius:12px;background:#020124;border:1px solid #2B3DA3">
-    <span class="label or">En español · zum Anhören</span>
-    <p style="margin:0;font-size:15px;line-height:1.5">${esc(c.es)}</p>
+    <div class="between"><span class="label or">En español · zum Anhören</span><button type="button" class="chip" data-deall="${c.id}" aria-pressed="false" style="min-height:34px;padding:0 10px;font-size:12px">Alles auf Deutsch</button></div>
+    <div class="col" style="gap:6px" data-text="${c.id}">${(c.es.match(/[^.!?]+[.!?]+/g) || [c.es]).map((x, k) => `<div class="tr-row">
+      <button type="button" class="tr-es" data-sent="${esc(x.trim())}" aria-label="Satz vorlesen">${esc(x.trim())}</button>
+      <button type="button" class="tr-btn" data-de="${k}" aria-expanded="false" aria-label="Übersetzung zeigen">DE</button>
+      <span class="tr-de" hidden>${esc((c.de || [])[k] || '')}</span></div>`).join('')}</div>
+    <span class="xs muted">Tipp auf einen Satz zum Anhören · „DE“ zeigt die Übersetzung</span>
     ${canSpeak() ? `<div class="say-row"><button type="button" class="chip on" data-read="${c.id}" data-rate="0.9" style="display:flex;align-items:center;gap:6px">${ic('speaker', 18)}Vorlesen</button><button type="button" class="chip" data-read="${c.id}" data-rate="0.65">Langsam</button><button type="button" class="chip" data-stop="1">Stopp</button></div>` : ''}
   </div>` : ''}
   <div class="col" style="gap:6px"><span class="label or">Gut zu wissen</span><ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.45">${c.facts.map((f) => `<li style="margin-bottom:4px">${esc(f)}</li>`).join('')}</ul></div>
@@ -66,6 +70,15 @@ ${open ? stars(l.stars) : ic('lock', 18, '#A9B4E8')}<span class="chev">${ic('che
     const r = e.target.closest('[data-read]');
     if (r) { const c = CITIES.find((x) => x.id === r.dataset.read); speak(c.es, 'es-ES', +r.dataset.rate); return; }
     if (e.target.closest('[data-stop]')) { speechSynthesis.cancel(); return; }
+    const sent = e.target.closest('[data-sent]'); if (sent) { speak(sent.dataset.sent, 'es-ES', 0.9); return; }
+    const one = e.target.closest('[data-de]');
+    if (one) { const row = one.closest('.tr-row'); const d = row.querySelector('.tr-de'); d.hidden = !d.hidden; one.setAttribute('aria-expanded', String(!d.hidden)); one.classList.toggle('on', !d.hidden); return; }
+    const all = e.target.closest('[data-deall]');
+    if (all) {
+      const box = root.querySelector(`[data-text="${all.dataset.deall}"]`); const show = all.getAttribute('aria-pressed') !== 'true';
+      box.querySelectorAll('.tr-row').forEach((row) => { row.querySelector('.tr-de').hidden = !show; const b = row.querySelector('.tr-btn'); b.classList.toggle('on', show); b.setAttribute('aria-expanded', String(show)); });
+      all.setAttribute('aria-pressed', String(show)); all.classList.toggle('on', show); all.textContent = show ? 'Deutsch ausblenden' : 'Alles auf Deutsch'; return;
+    }
     const w = e.target.closest('[data-word]'); if (w) speak(w.dataset.word, 'es-ES', 0.85);
   };
 }

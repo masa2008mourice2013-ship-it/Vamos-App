@@ -5,9 +5,10 @@ import { mapHTML } from '../map.js';
 import { CITIES, WORLDS } from '../data.js';
 
 function plan() {
-  // Mo, Mi, Fr dieser Woche
+  // Lerntage dieser Woche (in den Einstellungen wählbar)
   const now = new Date(); const dow = now.getDay() || 7; const set = new Set(S.days);
-  return [[1, 'Mo'], [3, 'Mi'], [5, 'Fr']].map(([d, l]) => {
+  const names = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  return (S.planDays && S.planDays.length ? S.planDays : [1, 3, 5]).slice().sort((a, b) => a - b).map((d) => [d, names[d]]).map(([d, l]) => {
     const x = new Date(now); x.setDate(now.getDate() - dow + d);
     const k = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
     return { l, done: set.has(k), today: d === dow, past: d < dow };
@@ -37,7 +38,7 @@ export function render(root) {
   <div class="card" style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
     <div class="between"><span style="font-weight:700;font-size:16px">${r} ${r === 1 ? 'Tag' : 'Tage'} in Folge gelernt</span><span class="xs muted">Rekord: ${bestRacha()} ${bestRacha() === 1 ? 'Tag' : 'Tage'}</span></div>
     <div class="between">${days.map((d) => `<div class="col" style="align-items:center;gap:4px"><div style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;${d.on ? 'background:#FA6D1E;color:#020124' : 'background:#18288A;color:#A9B4E8'};${d.today ? 'outline:2px solid #fff;outline-offset:2px' : ''}">${d.on ? ic('check', 16, '#020124', 3) : '–'}</div><span style="font-size:11px;${d.today ? 'font-weight:900' : 'color:#A9B4E8'}">${d.label}</span></div>`).join('')}</div>
-    <span class="xs muted">Pausen von bis zu 2 Tagen sind erlaubt – passend zu Mo, Mi, Fr.</span>
+    <span class="xs muted">Pausen von bis zu 2 Tagen sind erlaubt – passend zu deinem Trainingsplan.</span>
   </div>
 
   <div class="col" style="gap:6px;margin-top:6px">
@@ -55,8 +56,8 @@ export function render(root) {
   </div>
 
   <div class="card pad col" style="gap:10px">
-    <div class="between"><span style="font-weight:700;font-size:16px">Trainingsplan</span><span class="sm muted">ab 14:30</span></div>
-    <div class="g3">${plan().map((p) => p.done
+    <div class="between"><span style="font-weight:700;font-size:16px">Trainingsplan</span><span class="sm muted">ab ${esc(S.planTime || '14:30')}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(4, plan().length)},minmax(0,1fr));gap:8px">${plan().map((p) => p.done
       ? `<div class="row" style="justify-content:center;gap:6px;min-height:44px;border-radius:10px;background:#18288A;font-weight:700">${ic('check', 18, '#FA6D1E', 3)}${p.l}</div>`
       : p.today ? `<div class="row" style="justify-content:center;min-height:44px;border-radius:10px;border:2px solid #FA6D1E;font-weight:700;color:#FA6D1E">${p.l} · heute</div>`
         : `<div class="row" style="justify-content:center;min-height:44px;border-radius:10px;border:1px solid #2B3DA3;color:#A9B4E8">${p.l}${p.past ? ' · verpasst' : ''}</div>`).join('')}</div>
@@ -120,6 +121,6 @@ export function render(root) {
   function closeJose() { clearInterval(typer); stopSpeaking(); const o = document.getElementById('jose-ov'); if (o) o.remove(); }
 
   root.onclick = (e) => { if (e.target.closest('[data-act="jose"]')) openJose(); };
-  if (S.lastGreet !== today()) { S.lastGreet = today(); save(); setTimeout(() => openJose(), 300); }
+  if (S.greet !== false && S.lastGreet !== today()) { S.lastGreet = today(); save(); setTimeout(() => openJose(), 300); }
   return () => closeJose();
 }

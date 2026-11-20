@@ -12,7 +12,7 @@ function fresh() {
     week: { id: weekId(), correct: 0, claimed: false },
     outfit: { frisur: 'kurz', haar: '#2A1A14', brille: 'keine', band: 'keins', trikot: 'basic', hose: 'standard', schuhe: 'keine', extra: 'nichts' },
     bonusItems: [], revealed: {}, cooked: {}, badges: {}, records: { saque: 0, snake: 0, memo: 0, tres: 0 },
-    games: 0, voice: true, school: SCHOOL_DEFAULT, lastGreet: '', famCode: 'VAMOS-' + String(Math.floor(1000 + Math.random() * 9000)), hadMistakes: false,
+    games: 0, voice: true, school: SCHOOL_DEFAULT, sounds: true, slowVoice: false, qcount: 12, direction: 'mix', typing: true, planDays: [1, 3, 5], planTime: '14:30', snakeSpeed: 'normal', greet: true, avatarMode: 'figur', parentPin: '', lastGreet: '', famCode: 'VAMOS-' + String(Math.floor(1000 + Math.random() * 9000)), hadMistakes: false,
   };
 }
 

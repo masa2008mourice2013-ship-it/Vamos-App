@@ -8,6 +8,8 @@ import * as trophaeen from './screens/trophaeen.js';
 import * as scannen from './screens/scannen.js';
 import * as rezept from './screens/rezept.js';
 import * as profil from './screens/profil.js';
+import * as bildnachweise from './screens/bildnachweise.js';
+import { openViewer } from './photos.js';
 import * as serpiente from './games/serpiente.js';
 import * as tres from './games/tres.js';
 import * as saque from './games/saque.js';
@@ -15,7 +17,7 @@ import * as memoria from './games/memoria.js';
 
 const routes = {
   start: [start, '#/start'], training: [training, '#/training'], tour: [tour, '#/tour'], spiele: [spiele, '#/spiele'],
-  trophaeen: [trophaeen, '#/trophaeen'], scannen: [scannen, '#/training'], rezept: [rezept, '#/trophaeen'], profil: [profil, '#/trophaeen'],
+  trophaeen: [trophaeen, '#/trophaeen'], scannen: [scannen, '#/training'], rezept: [rezept, '#/trophaeen'], profil: [profil, '#/einstellungen'], einstellungen: [profil, '#/einstellungen'], bildnachweise: [bildnachweise, '#/einstellungen'],
   serpiente: [serpiente, '#/spiele'], tres: [tres, '#/spiele'], saque: [saque, '#/spiele'], memoria: [memoria, '#/spiele'],
 };
 
@@ -55,6 +57,7 @@ document.addEventListener('click', (e) => {
   const t = b.closest('.bubble, .big-bubble').querySelector('[data-jose-text], #jose-txt');
   if (t) joseSay(t.dataset.full || t.textContent, true);
 });
+document.addEventListener('click', (e) => { const w = e.target.closest('[data-wiki]'); if (w) openViewer(w.dataset.wiki); });
 window.addEventListener('hashchange', go);
 setInterval(tickClock, 1000);
 go();

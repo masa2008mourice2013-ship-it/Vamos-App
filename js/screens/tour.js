@@ -3,6 +3,7 @@ import { CITIES, RECIPES, WORLDS } from '../data.js';
 import { S, unlocked, currentIndex, recipeUnlocked } from '../store.js';
 import { header, ic, jose, LOGO, esc, stars, speak, canSpeak } from '../ui.js';
 import { mapHTML } from '../map.js';
+import { tile, hydrate } from '../photos.js';
 
 export function render(root) {
   const cur = currentIndex();
@@ -29,8 +30,8 @@ export function render(root) {
 ${open ? stars(l.stars) : ic('lock', 18, '#A9B4E8')}<span class="chev">${ic('chev', 22, '#A9B4E8', 2.4)}</span></summary>
 <div style="padding:0 14px 16px;display:flex;flex-direction:column;gap:14px">
   <span class="sm muted">${esc(c.tag)} · ${esc(c.unidad)}</span>
-  <div class="g3">${c.sights.map((s) => `<div style="aspect-ratio:4/3;border-radius:10px;background:#18288A;border:1px dashed #2B3DA3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;text-align:center">${ic('cam', 20, '#A9B4E8')}<span style="font-size:10px;font-weight:700;color:#A9B4E8;line-height:1.2">${esc(s)}</span></div>`).join('')}</div>
-  <div class="col" style="gap:6px"><span class="label or">Essen</span><div class="row" style="flex-wrap:wrap;gap:6px">${c.food.map((f) => `<span style="background:#18288A;border-radius:999px;padding:5px 12px;font-size:13px">${esc(f)}</span>`).join('')}</div></div>
+  <div class="col" style="gap:6px"><span class="label or">Sehenswürdigkeiten</span><div class="g3">${c.sights.map((x) => tile(x)).join('')}</div></div>
+  <div class="col" style="gap:6px"><span class="label or">Essen</span><div class="g3">${c.food.map((x) => tile(x)).join('')}</div></div>
   ${c.es ? `<div class="col" style="gap:8px;padding:12px;border-radius:12px;background:#020124;border:1px solid #2B3DA3">
     <span class="label or">En español · zum Anhören</span>
     <p style="margin:0;font-size:15px;line-height:1.5">${esc(c.es)}</p>
@@ -54,9 +55,13 @@ ${open ? stars(l.stars) : ic('lock', 18, '#A9B4E8')}<span class="chev">${ic('che
     <span class="row" style="gap:6px"><span style="width:14px;height:14px;border-radius:50%;border:2px solid #A9B4E8"></span>Noch gesperrt</span>
     <span class="row" style="gap:6px"><span style="width:14px;height:14px;border-radius:50%;background:#C2185B"></span>Endboss</span>
   </div>
-  <div class="col" style="gap:4px;margin-top:8px"><span class="h" style="font-size:24px">Deine Tour</span><span class="sm muted">Tipp auf eine Stadt: Essen, Fakten und die Vokabeln dazu.</span></div>
+  <div class="col" style="gap:4px;margin-top:8px"><span class="h" style="font-size:24px">Deine Tour</span><span class="sm muted">Tipp auf eine Stadt: Fotos, Essen, Fakten und die Vokabeln dazu. Tipp auf ein Foto für die Großansicht.</span></div>
   <div class="col" style="gap:10px">${cards}</div>
 </div>`;
+  root.querySelectorAll('details.city').forEach((d) => {
+    if (d.open) hydrate(d);
+    d.addEventListener('toggle', () => { if (d.open) hydrate(d); });
+  });
   root.onclick = (e) => {
     const r = e.target.closest('[data-read]');
     if (r) { const c = CITIES.find((x) => x.id === r.dataset.read); speak(c.es, 'es-ES', +r.dataset.rate); return; }

@@ -49,8 +49,12 @@ export function render(root, params) {
   if (pool.length < 4) { picker(root); return; }
 
   const all = [...allPairs().entries()];
-  const modes = canSpeak() ? ['mc', 'mcr', 'card', 'type', 'listen'] : ['mc', 'mcr', 'card', 'type'];
-  const items = shuffle(pool).slice(0, 12).map(([es, de], k) => ({ es, de, mode: modes[k % modes.length] }));
+  let modes = S.direction === 'de-es' ? ['mc', 'type', 'mc'] : S.direction === 'es-de' ? ['mcr', 'card', 'listen'] : ['mc', 'mcr', 'card', 'type', 'listen'];
+  if (!canSpeak()) modes = modes.filter((m) => m !== 'listen');
+  if (S.typing === false) modes = modes.filter((m) => m !== 'type');
+  if (!modes.length) modes = ['mc'];
+  let list = shuffle(pool); while (list.length < S.qcount && pool.length) list = list.concat(shuffle(pool));
+  const items = list.slice(0, S.qcount || 12).map(([es, de], k) => ({ es, de, mode: modes[k % modes.length] }));
   const st = { i: 0, answered: false, ok: false, picked: null, flipped: false, typed: '', note: '', combo: 0, correct: 0, done: false, result: null };
 
   function opts(item, toDe) {

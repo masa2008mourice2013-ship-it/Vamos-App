@@ -1,5 +1,6 @@
 // ¡Vamos! – gemeinsame Bausteine: Symbole, Header, Menü, José, Töne, Sprache
-import { S } from './store.js';
+import { S, getPhoto } from './store.js';
+import { avatarSVG } from './art.js';
 
 const P = {
   home: '<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',
@@ -41,9 +42,15 @@ export function header(title, back) {
     <img class="hdr-logo" src="${LOGO}" alt="¡Vamos!-Logo">
     <div class="hdr-time"><span class="hdr-date" data-date></span><span class="hdr-clock" data-clock></span></div>
     <div class="coin" title="Münzen"><i></i><span data-coins>${S.coins}</span></div>
+    <a href="#/einstellungen" class="hdr-av" aria-label="Profil und Einstellungen">${profilePic(40)}</a>
   </div>
   <div class="title-row"><div class="slant"><h1>${esc(title)}</h1></div>${b}</div>
 </header>`;
+}
+export function profilePic(size) {
+  const ph = S.avatarMode === 'foto' ? getPhoto('profile') : null;
+  if (ph) return `<img src="${ph}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block">`;
+  return `<span style="width:${size}px;height:${size}px;border-radius:50%;background:#0B1A6E;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">${avatarSVG(S.outfit, Math.round(size * 1.15)).replace('style="display:block;height:auto"', 'style="display:block;height:auto;margin-top:2px"')}</span>`;
 }
 export function tickClock() {
   const n = new Date(); const p = (x) => String(x).padStart(2, '0');
@@ -63,6 +70,7 @@ export function jose(text, accent) {
 
 let ctx;
 export function playTone(happy) {
+  if (S.sounds === false) return;
   try {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     ctx = ctx || new AC(); if (ctx.state === 'suspended') ctx.resume();
@@ -83,31 +91,74 @@ export function playTone(happy) {
   } catch (e) { /* kein Ton */ }
 }
 export function canSpeak() { return 'speechSynthesis' in window; }
-function voiceFor(lang) {
-  try {
-    const vs = speechSynthesis.getVoices(); const base = lang.slice(0, 2);
-    return vs.find((v) => v.lang === lang) || vs.find((v) => v.lang.replace('_', '-').startsWith(base)) || null;
-  } catch (e) { return null; }
+// ---------- Stimmen: die natürlichste verfügbare Stimme des Handys wählen ----------
+const GOOD = /google|natural|neural|premium|enhanced|online|wavenet|siri|monica|paulina|anna|helena|elvira|katja|conrad/i;
+const BAD = /espeak|compact|eloquence|robot|novelty|whisper|grandma|grandpa|bad news|bells|bubbles|cellos|zarvox|trinoids|albert/i;
+export function voicesFor(base) {
+  try { return speechSynthesis.getVoices().filter((v) => v.lang.replace('_', '-').toLowerCase().startsWith(base)); } catch (e) { return []; }
 }
-if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch (e) { /* */ } }
+function score(v, lang) {
+  let n = 0; const l = v.lang.replace('_', '-');
+  if (l === lang) n += 3; // es-ES statt es-MX/es-US
+  if (GOOD.test(v.name)) n += 5;
+  if (!v.localService) n += 2; // Online-Stimmen klingen meist natürlicher
+  if (BAD.test(v.name)) n -= 10;
+  return n;
+}
+function voiceFor(lang) {
+  const base = lang.slice(0, 2);
+  const list = voicesFor(base); if (!list.length) return null;
+  const chosen = base === 'es' ? S.voiceEs : S.voiceDe;
+  if (chosen) { const c = list.find((v) => v.name === chosen); if (c) return c; }
+  return list.slice().sort((x, y) => score(y, lang) - score(x, lang))[0];
+}
+const voiceListeners = [];
+export function onVoices(fn) { voiceListeners.push(fn); }
+if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => { speechSynthesis.getVoices(); voiceListeners.forEach((f) => { try { f(); } catch (e) { /* */ } }); }; } catch (e) { /* */ } }
+
+// Text so aufbereiten, dass er natürlicher klingt (Pausen, keine Sonderzeichen)
+function tidy(t) {
+  return String(t)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[✓✕★☆›→•✈]/g, ' ')
+    .replace(/\s*[–—]\s*/g, ', ')
+    .replace(/\s*…/g, '.')
+    .replace(/\+(\d+)/g, 'plus $1')
+    .replace(/\bXP\b/g, 'X P')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+// In Sätze teilen: kurze Pausen dazwischen wirken menschlicher und verhindern Abbrüche bei langen Texten
+function sentences(t) { return (t.match(/[^.!?¿¡]*[¡¿]?[^.!?]*[.!?]+|[^.!?]+$/g) || [t]).map((x) => x.trim()).filter(Boolean); }
+
 function utter(text, lang, rate) {
-  const u = new SpeechSynthesisUtterance(text); u.lang = lang; u.rate = rate; u.pitch = lang.startsWith('es') ? 0.95 : 0.9;
+  const u = new SpeechSynthesisUtterance(text); u.lang = lang;
+  u.rate = (S.slowVoice ? 0.8 : 1) * rate; u.pitch = 1; u.volume = 1;
   const v = voiceFor(lang); if (v) u.voice = v; return u;
 }
-export function speak(text, lang = 'es-ES', rate = 0.9) {
-  try { speechSynthesis.cancel(); speechSynthesis.speak(utter(text, lang, rate)); } catch (e) { /* */ }
+export function speak(text, lang = 'es-ES', rate = 0.92) {
+  try { speechSynthesis.cancel(); sentences(tidy(text)).forEach((t) => speechSynthesis.speak(utter(t, lang, rate))); } catch (e) { /* */ }
+}
+export function previewVoice(name, lang) {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(lang.startsWith('es') ? '¡Hola, Mourice! Soy José. ¿Vamos a aprender español?' : 'Hallo Mourice! Ich bin José. Lust auf ein kurzes Training?');
+    u.lang = lang; u.rate = lang.startsWith('es') ? 0.92 : 1; u.pitch = 1;
+    const v = speechSynthesis.getVoices().find((x) => x.name === name); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) { /* */ }
 }
 export function stopSpeaking() { try { speechSynthesis.cancel(); } catch (e) { /* */ } }
 // José spricht: Spanische Ausrufe (¡…! ¿…?) auf Spanisch, der Rest auf Deutsch
 export function joseSay(text, force = false) {
   if (!canSpeak() || (!force && S.voice === false)) return;
-  const clean = String(text).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const clean = tidy(text);
   if (!clean) return;
   try {
     speechSynthesis.cancel();
-    clean.split(/(¡[^!]*!|¿[^?]*\?)/).map((t) => t.trim()).filter(Boolean).forEach((t) => {
+    clean.split(/(¡[^!]*!|¿[^?]*\?)/).map((t) => t.trim().replace(/^[,.]\s*/, '')).filter((t) => /[\p{L}\d]/u.test(t)).forEach((t) => {
       const es = /^[¡¿]/.test(t);
-      speechSynthesis.speak(utter(es ? t : t.replace(/[–—]/g, ','), es ? 'es-ES' : 'de-DE', es ? 0.95 : 1.0));
+      (es ? [t] : sentences(t)).forEach((part) => speechSynthesis.speak(utter(part, es ? 'es-ES' : 'de-DE', es ? 0.92 : 1.0)));
     });
   } catch (e) { /* */ }
 }

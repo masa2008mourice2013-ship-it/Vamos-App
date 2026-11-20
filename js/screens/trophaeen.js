@@ -3,6 +3,7 @@ import { CITIES, RECIPES, OUTFIT, BADGES } from '../data.js';
 import { S, save, racha, currentCity, outfitUnlocked, outfitCounts, recipeUnlocked, daysLeftInWeek, unlocked } from '../store.js';
 import { header, ic, jose, esc, LOGO, playTone, refreshCoins, toast } from '../ui.js';
 import { avatarSVG, dishInner } from '../art.js';
+import { getImages, cached } from '../wiki.js';
 
 const ORDER = [4, 1, 3, 5, 7, 0, 2, 6, 8];
 const PRIZES = [['10', 'Münzen', 'c10'], ['+1', 'Runde', 'r1'], ['25', 'Münzen', 'c25'], ['Trikot', 'selten', 'shirt'], ['5', 'Münzen', 'c5'], ['+2', 'Runden', 'r2'], ['50', 'Münzen', 'c50'], ['Puzzle', '+1 Teil', 'puz']];
@@ -63,6 +64,8 @@ export function render(root) {
   function draw() {
     const nr = nextReward();
     const pc = puzzleCity(); const pl = S.levels[pc.id]; const rec = RECIPES[pc.recipe];
+    const pimg = cached(rec.name) ? cached(rec.name).thumb.replace(/'/g, '%27') : null;
+    if (!pimg) getImages([rec.name]).then(([v]) => { if (v && location.hash.includes('trophaeen') && !st.spinning) draw(); });
     const [open, total] = outfitCounts();
     const order = ['frisur', 'haar', 'brille', 'band', 'trikot', 'hose', 'schuhe', 'extra'].map((id) => OUTFIT.find((c) => c.id === id));
     const cur = OUTFIT.find((c) => c.id === st.cat);
@@ -97,7 +100,7 @@ export function render(root) {
   <div class="card pad col" style="gap:10px">
     <div class="between"><span class="h" style="font-size:22px">Duell der Woche</span><span class="xs or" style="font-weight:700">kommt bald</span></div>
     <span class="sm muted">Bald kann Mama auf ihrem eigenen Handy mitspielen – wer sammelt mehr XP? Euer Familien-Code ist schon reserviert.</span>
-    <a href="#/profil" class="btn2">Profile &amp; Familien-Code ${ic('arrow', 18, 'currentColor', 2.6)}</a>
+    <a href="#/einstellungen" class="btn2">Einstellungen &amp; Familien-Code ${ic('arrow', 18, 'currentColor', 2.6)}</a>
   </div>
 
   <div class="col" style="gap:12px">
@@ -121,7 +124,7 @@ export function render(root) {
       <div class="col"><span class="label or">${esc(pc.short)} · Gericht</span><span class="h" style="font-size:20px">${esc(rec.name)}</span></div>
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:252px;align-self:center">${[...Array(9)].map((_, i) => {
         const r = Math.floor(i / 3), c = i % 3;
-        return `<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#0B1A6E;border:1px solid #2B3DA3">${ORDER.indexOf(i) < pl.pieces ? `<svg viewBox="${c * 100} ${r * 100} 100 100" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%">${dishInner(pc.recipe)}</svg>` : `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#A9B4E8">${ic('lock', 18)}<span style="font-size:11px;font-weight:700">Teil ${i + 1}</span></div>`}</div>`;
+        return `<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:#0B1A6E;border:1px solid #2B3DA3">${ORDER.indexOf(i) < pl.pieces ? (pimg ? `<div aria-hidden="true" style="position:absolute;inset:0;background-image:url('${pimg}');background-size:300% 300%;background-position:${c * 50}% ${r * 50}%"></div>` : `<svg viewBox="${c * 100} ${r * 100} 100 100" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%">${dishInner(pc.recipe)}</svg>`) : `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#A9B4E8">${ic('lock', 18)}<span style="font-size:11px;font-weight:700">Teil ${i + 1}</span></div>`}</div>`;
       }).join('')}</div>
       <span class="sm muted">Jedes Training ${pc.id === 'start' ? 'im Start-Level' : 'in ' + esc(pc.short)} deckt ein Teil auf, 3 Sterne decken alles auf. Ist das Bild komplett, bekommst du das Rezept – mit Zutaten und Schritten auf Spanisch.</span>
     </div>

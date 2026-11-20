@@ -1,5 +1,6 @@
 // Service Worker: macht ¡Vamos! offline-fähig
-const CACHE = 'vamos-v4';
+const CACHE = 'vamos-v7';
+const IMG = 'vamos-img-v1';
 const FILES = [
   './',
   'assets/fonts/roboto-latin-400-normal.woff2',
@@ -23,6 +24,9 @@ const FILES = [
   'js/games/serpiente.js',
   'js/games/tres.js',
   'js/map.js',
+  'js/photos.js',
+  'js/wiki.js',
+  'js/screens/bildnachweise.js',
   'js/screens/profil.js',
   'js/screens/rezept.js',
   'js/screens/scannen.js',
@@ -39,7 +43,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== IMG).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
@@ -47,6 +51,9 @@ self.addEventListener('fetch', (e) => {
   if (url.origin === location.origin) {
     // Eigene Dateien: erst Netz (damit Updates ankommen), sonst Cache
     e.respondWith(fetch(e.request).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match('./'))));
+  } else if (url.hostname === 'upload.wikimedia.org') {
+    // Wikipedia-Fotos: einmal geladen, dann auch offline verfügbar
+    e.respondWith(caches.open(IMG).then((c) => c.match(e.request).then((r) => r || fetch(e.request).then((res) => { if (res.ok || res.type === 'opaque') c.put(e.request, res.clone()); return res; }))));
   } else if (url.hostname.includes('fonts.g')) {
     e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return res; })));
   }

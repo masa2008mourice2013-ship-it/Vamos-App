@@ -4,7 +4,7 @@ import { esc, playTone, shuffle, refreshCoins, ic } from '../ui.js';
 import { gameHeader, pairs, useRound, noRounds, startScreen } from './common.js';
 
 const N = 14;
-const delay = (words, idx) => Math.max(170, 420 - words * 25 - idx * 4); // langsam starten, allmählich schneller
+const delay = (words, idx) => Math.round(Math.max(170, 420 - words * 25 - idx * 4) * ({ slow: 1.3, normal: 1, fast: 0.8 }[S.snakeSpeed] || 1)); // langsam starten, allmählich schneller
 const ABC = 'ABCDEFGHIJLMNOPRSTUVÑÁÉÍÓÚ';
 const heart = (on) => `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 6-8 11-8 11z" fill="${on ? '#C2185B' : 'none'}" stroke="${on ? '#C2185B' : '#A9B4E8'}" stroke-width="2"/></svg>`;
 

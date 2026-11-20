@@ -3,6 +3,7 @@ import { RECIPES, CITIES } from '../data.js';
 import { S, save, award, recipeUnlocked, savePhoto, getPhoto } from '../store.js';
 import { header, ic, jose, esc, LOGO, playTone, speak, toast } from '../ui.js';
 import { dishSVG } from '../art.js';
+import { getImages, cached, credit } from '../wiki.js';
 
 function fmt(x) {
   const w = Math.floor(x + 1e-9), f = x - w;
@@ -41,13 +42,16 @@ export function render(root, params) {
   function draw() {
     const cooked = !!S.cooked[id];
     const t = (es, de) => (st.lang === 'de' ? de : es);
+    const wk = cached(r.name);
     root.innerHTML = header('Rezept', ['#/trophaeen', 'Trophäen']) + `<div class="content" style="gap:18px">
   <div class="col" style="gap:4px"><span class="label or">Rezeptkarte · ${esc(city.short)}</span><h2 class="h" style="margin:0;font-size:32px;line-height:1.05">${esc(r.name)}</h2><span class="sm muted">${esc(r.sub)}</span></div>
   <div style="position:relative;background:#0B1A6E;border:1px solid #2B3DA3;border-radius:14px;overflow:hidden">
-    ${st.photo ? `<img src="${st.photo}" alt="${esc(S.name)}s eigenes Foto von ${esc(r.name)}" style="width:100%;height:260px;object-fit:cover;display:block">` : `<div style="max-width:300px;margin:0 auto">${dishSVG(id, 'Zeichnung: ' + r.name)}</div>`}
-    <span style="position:absolute;left:10px;top:10px;background:rgba(2,1,36,.85);font-size:11px;font-weight:900;letter-spacing:1px;padding:4px 10px;border-radius:999px">${st.photo ? esc(S.name.toUpperCase()) + 'S FOTO' : 'ZEICHNUNG'}</span>
+    ${st.photo ? `<img src="${st.photo}" alt="${esc(S.name)}s eigenes Foto von ${esc(r.name)}" style="width:100%;height:260px;object-fit:cover;display:block">`
+      : wk ? `<img src="${esc(wk.thumb)}" alt="${esc(r.name)}" style="width:100%;height:260px;object-fit:cover;display:block">` : `<div style="max-width:300px;margin:0 auto">${dishSVG(id, 'Zeichnung: ' + r.name)}</div>`}
+    <span style="position:absolute;left:10px;top:10px;background:rgba(2,1,36,.85);font-size:11px;font-weight:900;letter-spacing:1px;padding:4px 10px;border-radius:999px">${st.photo ? esc(S.name.toUpperCase()) + 'S FOTO' : wk ? 'FOTO · WIKIPEDIA' : 'ZEICHNUNG'}</span>
     <label style="position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:999px;background:#FA6D1E;color:#020124;font-weight:900;font-size:13px;cursor:pointer">${ic('cam', 20)}${st.photo ? 'Neues Foto' : 'Dein Foto'}<input type="file" accept="image/*" data-photo style="position:absolute;width:1px;height:1px;opacity:0"></label>
   </div>
+  ${!st.photo && wk ? `<span class="xs muted" style="margin-top:-12px">${esc(credit(wk))}</span>` : ''}
   <div class="g3">${[['ZEIT', r.time], ['LEVEL', r.level], ['BELOHNUNG', '+30 XP']].map(([k, v], i) => `<div class="card col" style="padding:8px;align-items:center;text-align:center"><span class="xs muted" style="font-weight:700">${k}</span><span style="font-weight:900;font-size:14px;${i === 2 ? 'color:#FA6D1E' : ''}">${esc(v)}</span></div>`).join('')}</div>
   <div class="col" style="gap:6px"><span class="label muted">Sprache</span><div class="g3" style="gap:6px">${[['es', 'Español'], ['de', 'Deutsch'], ['both', 'Beide']].map(([k, l]) => `<button type="button" class="chip ${st.lang === k ? 'on' : ''}" data-lang="${k}" aria-pressed="${st.lang === k}" style="border-radius:10px;min-height:44px">${l}</button>`).join('')}</div></div>
   ${r.hot ? jose('Ojo: Hier wird mit heißem Öl oder Herd gearbeitet. Koch zusammen mit Mama oder Papa!', '#C2185B') : jose('Das Rezept schaffst du fast allein – frag trotzdem kurz, bevor du loslegst!')}
@@ -113,4 +117,5 @@ export function render(root, params) {
     } catch (err) { toast('Das Foto konnte nicht gelesen werden.'); }
   };
   draw();
+  if (!cached(r.name)) getImages([r.name]).then(([v]) => { if (v && location.hash.includes('rezept/' + id)) draw(); });
 }
